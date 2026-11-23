@@ -4,9 +4,9 @@
 
 Serveur [MCP](https://modelcontextprotocol.io) qui permet à un agent IA (Claude, Codex, Cursor, VS Code, Cline, Windsurf) de rechercher des offres sur [hellowork.com](https://www.hellowork.com), de les noter sur 100 selon vos critères, de suivre vos candidatures et de préparer l'envoi sous votre contrôle.
 
-> Projet indépendant, non affilié à Hellowork. L'icône est une création originale du projet.
+> Projet indépendant, non affilié à Hellowork. L'icône (monogramme « hw ») est une création du projet, distincte du logo déposé de Hellowork.
 
-Version 1.0.0. Licence MIT. English summary at the end of this file.
+Version 1.1.0. Licence MIT. English summary at the end of this file.
 
 ## Sommaire
 
@@ -14,6 +14,7 @@ Version 1.0.0. Licence MIT. English summary at the end of this file.
 - [Prérequis et systèmes](#prérequis-et-systèmes)
 - [Installation](#installation)
 - [Configuration des clients MCP](#configuration-des-clients-mcp)
+- [Ajouter par URL (connecteur HTTPS)](#ajouter-par-url-connecteur-https)
 - [Utilisation](#utilisation)
 - [Outils MCP](#outils-mcp)
 - [Configuration des critères](#configuration-des-critères)
@@ -33,6 +34,7 @@ Version 1.0.0. Licence MIT. English summary at the end of this file.
 - Historique horodaté de toutes les actions, écritures JSON atomiques et récupération des fichiers corrompus.
 - Exports CSV (séparateur `;`, UTF-8 avec BOM pour Excel) et Markdown horodatés.
 - Connexion manuelle dans une fenêtre Chromium, session conservée localement, détection d'expiration.
+- Deux modes : stdio pour un client local, Streamable HTTP pour ajouter le serveur par URL HTTPS (connecteur personnalisé Claude), avec `Dockerfile` et blueprint Render.
 
 ## Prérequis et systèmes
 
@@ -166,6 +168,21 @@ command = "CHEMIN/hellowork-mcp"
 ### Cline et Windsurf
 
 Cline : panneau MCP Servers > Configure, fichier `cline_mcp_settings.json`. Windsurf : `~/.codeium/windsurf/mcp_config.json`. Les deux utilisent le format `mcpServers` de Claude Desktop.
+
+## Ajouter par URL (connecteur HTTPS)
+
+Pour ajouter Hellowork MCP dans Claude via Paramètres > Connecteurs > « Ajouter un connecteur personnalisé » (champs Nom et URL du serveur MCP), le serveur doit être joignable en HTTPS :
+
+```bash
+hellowork-mcp --transport http --host 0.0.0.0 --port 8000 --path /mcp-VOTRE-SECRET
+```
+
+Puis exposer ce port en HTTPS : tunnel `cloudflared tunnel --url http://localhost:8000` depuis votre PC, hébergement Render en un clic (`render.yaml`), ou Docker (`Dockerfile`). Dans Claude :
+
+- Nom : `Hellowork`
+- URL du serveur MCP : `https://votre-adresse/mcp-VOTRE-SECRET`
+
+En mode HTTP, la recherche, l'analyse, le score, l'historique et la préparation de candidature fonctionnent. Les outils qui ouvrent un navigateur (connexion, envoi réel, ouverture de lien) sont désactivés car ils agiraient sur la machine du serveur. Le serveur n'a pas d'authentification : le chemin secret est la seule protection, ne partagez pas l'URL. Guide complet : [docs/REMOTE.md](docs/REMOTE.md).
 
 ## Utilisation
 

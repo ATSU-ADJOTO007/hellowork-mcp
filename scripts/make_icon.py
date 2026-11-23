@@ -1,62 +1,44 @@
-"""Génère src/hellowork_mcp/assets/icon.png (256 x 256) sans dépendance externe.
+"""Génère les PNG de l'icône à partir de src/hellowork_mcp/assets/icon.svg.
 
-Icône originale du projet (fond indigo arrondi, lettre H, point jaune). Elle ne reprend pas le logo
-officiel Hellowork : ce projet est indépendant de Hellowork.
+Le rendu passe par Chromium (Playwright, déjà requis par le projet) pour obtenir un PNG lissé
+à fond transparent. Sorties : src/hellowork_mcp/assets/icon.png et icon.png à la racine (README).
 
-Usage : python scripts/make_icon.py
+Usage : python scripts/make_icon.py [taille]   (256 par défaut)
 """
 
 from __future__ import annotations
 
-import struct
-import zlib
+import sys
 from pathlib import Path
 
-SIZE = 256
-BG = (49, 46, 129)
-FG = (255, 255, 255)
-ACCENT = (250, 204, 21)
+from playwright.sync_api import sync_playwright
+
+ROOT = Path(__file__).resolve().parents[1]
+SVG = ROOT / "src" / "hellowork_mcp" / "assets" / "icon.svg"
+TARGETS = [ROOT / "src" / "hellowork_mcp" / "assets" / "icon.png", ROOT / "icon.png"]
 
 
-def inside_rounded(x: int, y: int, radius: int) -> bool:
-    cx = min(max(x, radius), SIZE - 1 - radius)
-    cy = min(max(y, radius), SIZE - 1 - radius)
-    return (x - cx) ** 2 + (y - cy) ** 2 <= radius**2
-
-
-def pixel(x: int, y: int) -> tuple[int, int, int, int]:
-    if not inside_rounded(x, y, 48):
-        return (0, 0, 0, 0)
-    # Lettre H
-    if (64 <= x < 100 or 156 <= x < 192) and 56 <= y < 200:
-        return (*FG, 255)
-    if 100 <= x < 156 and 112 <= y < 144:
-        return (*FG, 255)
-    # Point d'accent
-    if (x - 200) ** 2 + (y - 200) ** 2 <= 18**2:
-        return (*ACCENT, 255)
-    return (*BG, 255)
-
-
-def png_bytes() -> bytes:
-    raw = bytearray()
-    for y in range(SIZE):
-        raw.append(0)
-        for x in range(SIZE):
-            raw.extend(pixel(x, y))
-
-    def chunk(tag: bytes, data: bytes) -> bytes:
-        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
-
-    header = struct.pack(">IIBBBBB", SIZE, SIZE, 8, 6, 0, 0, 0)
-    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b"")
+def render(size: int = 256) -> bytes:
+    style = f'style="width:{size}px;height:{size}px;display:block" '
+    svg = SVG.read_text(encoding="utf-8").replace("<svg ", "<svg " + style, 1)
+    html = (
+        "<!doctype html><html><body style='margin:0;background:transparent'>"
+        f"<div id='icon' style='width:{size}px;height:{size}px'>{svg}</div>"
+        "</body></html>"
+    )
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(viewport={"width": size, "height": size})
+        page.set_content(html)
+        data = page.locator("#icon").screenshot(omit_background=True)
+        browser.close()
+    return data
 
 
 def main() -> None:
-    root = Path(__file__).resolve().parents[1]
-    data = png_bytes()
-    for target in (root / "src" / "hellowork_mcp" / "assets" / "icon.png", root / "icon.png"):
-        target.parent.mkdir(parents=True, exist_ok=True)
+    size = int(sys.argv[1]) if len(sys.argv) > 1 else 256
+    data = render(size)
+    for target in TARGETS:
         target.write_bytes(data)
         print(f"{target} ({len(data)} octets)")
 

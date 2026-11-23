@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hellowork-mcp"
-version = "1.0.0"
+version = "1.1.0"
 description = "Serveur MCP non officiel pour rechercher, analyser et suivre des offres d'emploi Hellowork depuis un agent IA."
 readme = "README.md"
 license = "MIT"

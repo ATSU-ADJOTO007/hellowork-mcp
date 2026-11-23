@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Hellowork MCP</title>
+  <rect width="256" height="256" rx="56" fill="#111111"/>
+  <g fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 62 V190"/>
+    <path d="M58 128 Q58 100 86 100 Q114 100 114 128 V190"/>
+    <path d="M138 108 L154 190 L174 134 L194 190 L210 108"/>
+  </g>
+</svg>

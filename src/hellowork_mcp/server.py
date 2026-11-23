@@ -56,8 +56,13 @@ def _icons() -> list[Icon] | None:
     except (FileNotFoundError, OSError):
         log.warning("Icône introuvable dans le paquet : le serveur démarre sans icône")
         return None
-    data_uri = "data:image/png;base64," + base64.b64encode(png).decode("ascii")
-    return [Icon(src=data_uri, mime_type="image/png", sizes=["256x256"])]
+    icons = [Icon(src="data:image/png;base64," + base64.b64encode(png).decode("ascii"), mime_type="image/png", sizes=["256x256"])]
+    try:
+        svg = resources.files("hellowork_mcp").joinpath("assets/icon.svg").read_bytes()
+        icons.append(Icon(src="data:image/svg+xml;base64," + base64.b64encode(svg).decode("ascii"), mime_type="image/svg+xml", sizes=["any"]))
+    except (FileNotFoundError, OSError):
+        pass  # le PNG suffit
+    return icons
 
 
 mcp = MCPServer(
@@ -71,6 +76,34 @@ mcp = MCPServer(
 )
 _browser = BrowserSession()
 _confirmations = ConfirmationStore()
+
+# Mode HTTP : le serveur tourne sur une autre machine que celle de l'utilisateur (hébergeur, tunnel).
+# Les outils qui ouvrent Chromium ou le navigateur par défaut agiraient sur cette machine distante :
+# ils sont refusés, sauf activation explicite pour un serveur personnel (--enable-browser).
+_http_mode = False
+_browser_allowed = True
+
+
+@mcp.custom_route("/healthz", methods=["GET"], include_in_schema=False)
+async def healthz(request):  # sonde de disponibilité des hébergeurs (Render, Docker)
+    from starlette.responses import JSONResponse
+
+    return JSONResponse({"status": "ok", "version": __version__})
+
+
+def configure_http_mode(enable_browser: bool = False) -> None:
+    global _http_mode, _browser_allowed
+    _http_mode = True
+    _browser_allowed = enable_browser
+
+
+def _require_local_browser(action: str) -> None:
+    if not _browser_allowed:
+        raise ToolError(
+            f"{action} n'est pas disponible quand le serveur est utilisé par URL (mode HTTP) : la fenêtre s'ouvrirait "
+            "sur la machine qui héberge le serveur. Utiliser l'installation locale (stdio) pour cette action, "
+            "ou lancer le serveur personnel avec --enable-browser."
+        )
 
 
 def _config() -> Config:
@@ -135,6 +168,8 @@ def hellowork_status() -> dict[str, Any]:
         "thresholds": config.thresholds.model_dump(),
         "criteria_configured": bool(config.job_titles or config.required_keywords or config.locations),
         "offers_tracked": len(history.offers()),
+        "transport": "http" if _http_mode else "stdio",
+        "browser_tools_enabled": _browser_allowed,
         "redirects_recorded": len(RedirectRegistry().all()),
     }
 
@@ -179,6 +214,7 @@ async def hellowork_login(
     """Ouvre une fenêtre Chromium sur la page de connexion Hellowork et attend que l'utilisateur se connecte
     lui-même. Aucun identifiant n'est saisi ni stocké par le serveur. La session est conservée localement."""
     try:
+        _require_local_browser("La connexion Hellowork")
         result = await _browser.login(timeout_seconds)
     except BrowserUnavailableError as exc:
         raise ToolError(str(exc)) from exc
@@ -191,6 +227,7 @@ async def check_session() -> dict[str, Any]:
     """Vérifie si la session Hellowork enregistrée est toujours valide. login_required=true indique qu'il faut
     lancer hellowork_login."""
     try:
+        _require_local_browser("La vérification de session")
         return await _browser.check_session(headless=_config().headless)
     except BrowserUnavailableError as exc:
         raise ToolError(str(exc)) from exc
@@ -200,6 +237,8 @@ async def check_session() -> dict[str, Any]:
 async def clear_session() -> dict[str, Any]:
     """Supprime le profil navigateur local (cookies et session Hellowork). Une nouvelle connexion sera nécessaire."""
     import shutil
+
+    _require_local_browser("La suppression de session")
 
     await _browser.close()
     profile = browser_profile_dir()
@@ -433,13 +472,16 @@ async def submit_application(
         return {"application_sent": False, "allowed": False, "checks": guards.checks}
 
     common = {"title": offer.title, "company": offer.company, "url": offer.url, "score": score.score}
-    if config.dry_run:
+    if config.dry_run or not _browser_allowed:
         history.record("simulated", offer_id, details="Mode simulation : rien n'a été envoyé", **common)
         return {
             "application_sent": False,
             "dry_run": True,
             "status": "simulated",
-            "details": "Simulation enregistrée. Pour envoyer réellement : update_config({\"dry_run\": false}).",
+            "details": "Simulation enregistrée. Pour envoyer réellement : update_config({\"dry_run\": false})."
+            if _browser_allowed
+            else "Simulation enregistrée. En mode HTTP, l'envoi réel exige l'installation locale (stdio) : "
+            "la candidature se termine dans une fenêtre Chromium sur votre machine.",
         }
     try:
         outcome = await _browser.apply(offer.url, message, headless=False)
@@ -510,6 +552,7 @@ def open_external_redirect(
 ) -> dict[str, Any]:
     """Ouvre un lien externe enregistré dans le navigateur par défaut de l'utilisateur. Un lien déjà ouvert
     n'est pas rouvert sauf si force=true."""
+    _require_local_browser("L'ouverture d'un lien dans le navigateur")
     if not is_safe_external_url(external_url):
         raise ToolError("Seules les URL http et https sont acceptées.")
     registry = RedirectRegistry()
@@ -594,4 +637,8 @@ def export_data(
         rows, columns, title = RedirectRegistry().all(), REDIRECT_COLUMNS, "Redirections externes Hellowork"
     name = f"hellowork-{dataset}"
     path = export_csv(rows, columns, name) if format == "csv" else export_markdown(rows, columns, name, title)
-    return {"ok": True, "path": str(path), "rows": len(rows), "format": format}
+    result: dict[str, Any] = {"ok": True, "path": str(path), "rows": len(rows), "format": format}
+    if _http_mode:
+        # Le fichier est écrit sur le serveur distant : le contenu est renvoyé pour que l'utilisateur le récupère.
+        result["content"] = path.read_text(encoding="utf-8-sig" if format == "csv" else "utf-8")
+    return result

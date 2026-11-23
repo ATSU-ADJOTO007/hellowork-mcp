@@ -4,7 +4,8 @@
 
 | Version | Correctifs de sécurité |
 | --- | --- |
-| 1.0.x | oui |
+| 1.1.x | oui |
+| 1.0.x | non |
 
 ## Signaler une vulnérabilité
 
@@ -22,6 +23,8 @@ Utiliser l'onglet Security > Report a vulnerability du dépôt GitHub (signaleme
 - **Dépôt** : `.gitignore` exclut sessions, historiques, configuration et exports. `scripts/check_sensitive_files.py` vérifie en CI qu'aucun fichier sensible ou jeton n'est suivi par Git.
 
 ## Risques connus
+
+- En mode HTTP (connecteur par URL), le serveur n'a pas d'authentification : toute personne qui connaît l'URL accède à la configuration et à l'historique. Utiliser un chemin secret long (`--path`) et un serveur par personne. Les outils qui pilotent un navigateur y sont désactivés par défaut.
 
 - Le profil Chromium local donne accès au compte Hellowork à toute personne qui peut lire votre dossier utilisateur. Utiliser `clear_session` sur un poste partagé.
 - Un agent IA mal configuré pourrait appeler `submit_application` avec `user_confirmed=true` sans vous avoir consulté. Garder `dry_run=true` tant que le client n'impose pas une validation des appels d'outils, et ne pas mettre `submit_application` en approbation automatique.

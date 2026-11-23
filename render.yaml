@@ -1,0 +1,12 @@
+# Blueprint Render : https://render.com/docs/blueprint-spec
+# Crée un service web Docker accessible en HTTPS. Au déploiement, Render demande HELLOWORK_MCP_PATH :
+# choisir un chemin long et aléatoire, par exemple /mcp-7f3a9c2e51b84d0f.
+services:
+  - type: web
+    name: hellowork-mcp
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: HELLOWORK_MCP_PATH
+        sync: false

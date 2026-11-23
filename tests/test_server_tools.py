@@ -193,4 +193,41 @@ async def test_parameter_validation():
 
 def test_server_icon_is_declared():
     icons = server._icons()
-    assert icons and icons[0].src.startswith("data:image/png;base64,")
+    assert icons[0].src.startswith("data:image/png;base64,")
+    assert icons[1].mime_type == "image/svg+xml"
+
+
+@pytest.fixture
+def http_mode(monkeypatch):
+    monkeypatch.setattr(server, "_http_mode", True)
+    monkeypatch.setattr(server, "_browser_allowed", False)
+
+
+async def test_http_mode_blocks_browser_tools(http_mode):
+    for name, args in (
+        ("hellowork_login", {}),
+        ("check_session", {}),
+        ("clear_session", {}),
+        ("open_external_redirect", {"external_url": "https://jobs.lever.co/a/1"}),
+    ):
+        _, err = await call(name, args)
+        assert err and "mode HTTP" in err, name
+    data, _ = await call("hellowork_status")
+    assert data["transport"] == "http" and data["browser_tools_enabled"] is False
+
+
+async def test_http_mode_submit_only_simulates(http_mode, fake_site):
+    await call("update_config", {"changes": {"dry_run": False}})
+    data, _ = await call("prepare_application", {"offer_id": "10000001"})
+    data, err = await call(
+        "submit_application",
+        {"offer_id": "10000001", "confirmation_token": data["confirmation_token"], "user_confirmed": True},
+    )
+    assert err is None and data["application_sent"] is False and data["status"] == "simulated"
+
+
+async def test_http_mode_export_returns_content(http_mode):
+    await call("mark_offer", {"offer_id": "10000002", "status": "selected", "title": "Data Engineer H/F"})
+    data, _ = await call("export_data", {"dataset": "offers", "format": "csv"})
+    assert data["content"].startswith("offer_id;title")
+    assert "Data Engineer H/F" in data["content"]

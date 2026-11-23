@@ -17,6 +17,10 @@ Dans un fichier JSON sous Windows, chaque `\` s'écrit `\\`, ou bien on utilise 
 
 Variable facultative, commune à tous les clients : `HELLOWORK_MCP_DATA_DIR` pour changer le dossier de données. Exemple JSON : `"env": {"HELLOWORK_MCP_DATA_DIR": "D:/hellowork-data"}`.
 
+## Claude (connecteur personnalisé par URL)
+
+claude.ai, Claude Desktop et l'application mobile acceptent un connecteur ajouté par URL HTTPS : Paramètres > Connecteurs > Ajouter un connecteur personnalisé, Nom `Hellowork`, URL `https://votre-adresse/mcp-VOTRE-SECRET`. Le serveur doit tourner en mode HTTP et être exposé en HTTPS : voir [REMOTE.md](REMOTE.md).
+
 ## Claude Desktop
 
 Fichier : Paramètres > Développeur > Modifier la configuration, ce qui ouvre `claude_desktop_config.json`.

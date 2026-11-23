@@ -2,6 +2,19 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions selon [SemVer](https://semver.org/lang/fr/).
 
+## [1.1.0] - 2026-11-23
+
+### Ajouté
+
+- Mode Streamable HTTP (`--transport http`, `--host`, `--port`, `--path`, `--allowed-host`) pour ajouter le serveur par URL HTTPS, par exemple comme connecteur personnalisé Claude.
+- En mode HTTP, outils navigateur désactivés (connexion, session, envoi réel, ouverture de lien) sauf `--enable-browser`, et `export_data` renvoie le contenu du fichier.
+- Route `GET /healthz`, `Dockerfile` et blueprint `render.yaml`.
+- Guide `docs/REMOTE.md` (tunnel cloudflared, Render, Docker).
+
+### Modifié
+
+- Nouvelle icône : monogramme « hw » noir et blanc au format carré, source vectorielle `icon.svg` déclarée en plus du PNG.
+
 ## [1.0.0] - 2026-11-23
 
 Première version publique.
