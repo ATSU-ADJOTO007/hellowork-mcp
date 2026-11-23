@@ -1,0 +1,41 @@
+# Environnements Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Données locales Hellowork MCP (sessions, cookies, historique, exports)
+browser-profile/
+exports/
+history.json
+redirects.json
+config.json
+storage_state.json
+cookies*.json
+*.corrupt-*.json
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Système et éditeurs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+*.tmp
+
+# Cahier des charges interne
+PROMPT DE DÉVELOPPEMENT COMPLET - H.md
