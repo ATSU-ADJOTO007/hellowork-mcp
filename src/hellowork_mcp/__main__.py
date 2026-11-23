@@ -27,6 +27,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Télécharge Chromium pour Playwright avec le Python de cette installation, puis quitte.",
     )
+    parser.add_argument(
+        "--setup-claude",
+        action="store_true",
+        help="Ajoute ce serveur à Claude Desktop (et à Claude Code s'il est installé), puis quitte.",
+    )
     parser.add_argument("--log-level", default="WARNING", help="Niveau de log sur stderr (DEBUG, INFO, WARNING).")
     http = parser.add_argument_group("mode HTTP (connecteur distant par URL)")
     http.add_argument(
@@ -65,6 +70,17 @@ def main(argv: list[str] | None = None) -> int:
         import subprocess
 
         return subprocess.call([sys.executable, "-m", "playwright", "install", "chromium"])
+
+    if args.setup_claude:
+        from .setup_clients import setup_all
+
+        try:
+            report = setup_all()
+        except (OSError, ValueError) as exc:
+            print(f"Configuration impossible : {exc}", file=sys.stderr)
+            return 1
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
 
     # stdout est réservé au protocole MCP : tous les logs partent sur stderr.
     logging.basicConfig(

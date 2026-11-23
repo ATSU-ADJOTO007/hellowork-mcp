@@ -12,6 +12,8 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 - Guide `docs/REMOTE.md` (tunnel cloudflared, Render, Docker).
 - Annotations MCP sur les 19 outils (titre, lecture seule, destructif, idempotent, monde ouvert).
 - Politique de confidentialité `PRIVACY.md`.
+- Installation en une commande : `install.ps1` (Windows) et `install.sh` (macOS, Linux) installent uv, le serveur, Chromium et configurent Claude Desktop.
+- Commande `hellowork-mcp --setup-claude` : fusion dans `claude_desktop_config.json` avec sauvegarde, prise en charge de la version Microsoft Store, ajout à Claude Code si présent.
 
 ### Modifié
 

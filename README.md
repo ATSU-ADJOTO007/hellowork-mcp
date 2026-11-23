@@ -48,6 +48,28 @@ Tests réellement exécutés pour la version 1.0.0 : Windows 11 avec Python 3.14
 
 ## Installation
 
+### Installation en une commande (recommandée)
+
+Une seule ligne installe tout : Python (si besoin, sans droits administrateur), Hellowork MCP, le navigateur Chromium, puis ajoute le serveur dans Claude Desktop (et Claude Code s'il est installé).
+
+**Windows** : ouvrir PowerShell (menu Démarrer > « PowerShell ») et coller :
+
+```powershell
+irm https://raw.githubusercontent.com/ATSU-ADJOTO007/hellowork-mcp/main/install.ps1 | iex
+```
+
+**macOS et Linux** : ouvrir Terminal et coller :
+
+```bash
+curl -LsSf https://raw.githubusercontent.com/ATSU-ADJOTO007/hellowork-mcp/main/install.sh | sh
+```
+
+Ensuite, quitter complètement Claude Desktop puis le relancer : les outils Hellowork apparaissent. Le script utilise [uv](https://docs.astral.sh/uv/) (Astral) pour gérer Python, conserve une copie de sauvegarde de `claude_desktop_config.json` avant de le modifier, et peut être relancé pour mettre à jour. Le code des scripts est lisible avant exécution : [install.ps1](install.ps1), [install.sh](install.sh).
+
+Commandes utiles après installation : `hellowork-mcp --check` (diagnostic), `hellowork-mcp --setup-claude` (reconfigurer Claude Desktop), `uv tool uninstall hellowork-mcp` (désinstaller).
+
+### Installation manuelle
+
 Le guide détaillé par système se trouve dans [docs/INSTALL_WINDOWS.md](docs/INSTALL_WINDOWS.md), [docs/INSTALL_MACOS.md](docs/INSTALL_MACOS.md) et [docs/INSTALL_LINUX.md](docs/INSTALL_LINUX.md).
 
 ### Windows (PowerShell)
