@@ -10,6 +10,8 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 - En mode HTTP, outils navigateur désactivés (connexion, session, envoi réel, ouverture de lien) sauf `--enable-browser`, et `export_data` renvoie le contenu du fichier.
 - Route `GET /healthz`, `Dockerfile` et blueprint `render.yaml`.
 - Guide `docs/REMOTE.md` (tunnel cloudflared, Render, Docker).
+- Annotations MCP sur les 19 outils (titre, lecture seule, destructif, idempotent, monde ouvert).
+- Politique de confidentialité `PRIVACY.md`.
 
 ### Modifié
 

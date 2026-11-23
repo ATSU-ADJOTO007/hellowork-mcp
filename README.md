@@ -224,6 +224,8 @@ Si Hellowork demande une étape inconnue (CV, questions du recruteur), le serveu
 | `get_history`, `list_tracked_offers` | Historique des événements et statut des offres |
 | `export_data` | Export CSV ou Markdown des offres, événements ou redirections |
 
+Chaque outil déclare un titre et les annotations MCP `readOnlyHint`, `destructiveHint`, `idempotentHint` et `openWorldHint` : les outils de lecture sont marqués en lecture seule, `submit_application` et `clear_session` comme destructifs.
+
 Chaque réponse est un objet JSON. Les champs `application_sent`, `external_link_opened`, `human_validation_required`, `human_action` et `next_steps` indiquent ce qui a été fait et ce qui reste à faire. Les erreurs sont renvoyées comme erreurs d'outil MCP avec un message explicite.
 
 ## Configuration des critères
@@ -265,7 +267,7 @@ La variable d'environnement `HELLOWORK_MCP_DATA_DIR` remplace ce dossier. Conten
 - Aucune candidature réelle sans `dry_run=false`, jeton valide et `user_confirmed=true`. Le jeton est lié à l'offre et au texte exact du message.
 - Seules les URL `http` et `https` déjà enregistrées peuvent être ouvertes. Les cellules CSV commençant par `=`, `+`, `-` ou `@` sont neutralisées.
 
-Détails et signalement de vulnérabilité : [SECURITY.md](SECURITY.md).
+Détails et signalement de vulnérabilité : [SECURITY.md](SECURITY.md). Données traitées et suppression : [PRIVACY.md](PRIVACY.md).
 
 ## Tests
 

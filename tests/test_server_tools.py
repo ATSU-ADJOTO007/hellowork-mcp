@@ -191,6 +191,23 @@ async def test_parameter_validation():
     assert data["category"] == "ats"
 
 
+async def test_every_tool_has_directory_annotations():
+    """Exigence de l'annuaire Anthropic : un titre et readOnlyHint ou destructiveHint pour chaque outil."""
+    async with Client(server.mcp) as client:
+        tools = (await client.list_tools()).tools
+    for tool in tools:
+        ann = tool.annotations
+        assert ann is not None and ann.title, tool.name
+        assert ann.read_only_hint is not None and ann.destructive_hint is not None, tool.name
+        assert len(tool.name) <= 64
+        if ann.read_only_hint:
+            assert ann.destructive_hint is False, tool.name
+    by_name = {t.name: t.annotations for t in tools}
+    assert by_name["submit_application"].destructive_hint is True
+    assert by_name["clear_session"].destructive_hint is True
+    assert by_name["get_offer"].read_only_hint is True
+
+
 def test_server_icon_is_declared():
     icons = server._icons()
     assert icons[0].src.startswith("data:image/png;base64,")

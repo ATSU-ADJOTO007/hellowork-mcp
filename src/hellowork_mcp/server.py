@@ -11,7 +11,7 @@ from typing import Annotated, Any, Literal
 import anyio
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
-from mcp.types import Icon
+from mcp.types import Icon, ToolAnnotations
 from pydantic import Field
 
 from . import __version__
@@ -74,6 +74,17 @@ mcp = MCPServer(
     icons=_icons(),
     website_url="https://github.com/ATSU-ADJOTO007/hellowork-mcp",
 )
+def _ann(title: str, *, read_only: bool, destructive: bool, idempotent: bool, open_world: bool) -> ToolAnnotations:
+    """Annotations MCP : titre lisible et nature de l'outil (lecture seule ou action, réversible ou non)."""
+    return ToolAnnotations(
+        title=title,
+        read_only_hint=read_only,
+        destructive_hint=destructive,
+        idempotent_hint=idempotent,
+        open_world_hint=open_world,
+    )
+
+
 _browser = BrowserSession()
 _confirmations = ConfirmationStore()
 
@@ -153,7 +164,7 @@ async def _run(func, *args):
 # ---------------------------------------------------------------- état et configuration
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("État du serveur Hellowork MCP", read_only=True, destructive=False, idempotent=True, open_world=False))
 def hellowork_status() -> dict[str, Any]:
     """État du serveur : version, dossier de données, mode simulation, candidatures du jour et critères actifs."""
     config = _config()
@@ -174,7 +185,7 @@ def hellowork_status() -> dict[str, Any]:
     }
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Lire la configuration", read_only=True, destructive=False, idempotent=True, open_world=False))
 def get_config() -> dict[str, Any]:
     """Retourne la configuration complète (critères de recherche, seuils, protections)."""
     return {"config": _config().model_dump(mode="json"), "fields": _config_field_docs()}
@@ -184,7 +195,7 @@ def _config_field_docs() -> dict[str, str]:
     return {name: (field.description or "") for name, field in Config.model_fields.items()}
 
 
-@mcp.tool(name="update_config")
+@mcp.tool(name="update_config", annotations=_ann("Modifier la configuration", read_only=False, destructive=False, idempotent=True, open_world=False))
 def update_config_tool(
     changes: Annotated[
         dict[str, Any],
@@ -207,7 +218,7 @@ def update_config_tool(
 # ---------------------------------------------------------------- session
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Se connecter à Hellowork (manuel)", read_only=False, destructive=False, idempotent=True, open_world=True))
 async def hellowork_login(
     timeout_seconds: Annotated[int, Field(ge=30, le=900, description="Durée d'attente de la connexion manuelle")] = 300,
 ) -> dict[str, Any]:
@@ -222,7 +233,7 @@ async def hellowork_login(
     return result
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Vérifier la session Hellowork", read_only=True, destructive=False, idempotent=True, open_world=True))
 async def check_session() -> dict[str, Any]:
     """Vérifie si la session Hellowork enregistrée est toujours valide. login_required=true indique qu'il faut
     lancer hellowork_login."""
@@ -233,7 +244,7 @@ async def check_session() -> dict[str, Any]:
         raise ToolError(str(exc)) from exc
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Supprimer la session locale", read_only=False, destructive=True, idempotent=True, open_world=False))
 async def clear_session() -> dict[str, Any]:
     """Supprime le profil navigateur local (cookies et session Hellowork). Une nouvelle connexion sera nécessaire."""
     import shutil
@@ -249,7 +260,7 @@ async def clear_session() -> dict[str, Any]:
 # ---------------------------------------------------------------- recherche et analyse
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Rechercher des offres", read_only=False, destructive=False, idempotent=False, open_world=True))
 async def search_offers(
     keywords: Annotated[str, Field(description="Mots-clés, poste ou entreprise. Vide : postes de la configuration")] = "",
     location: Annotated[str, Field(description="Ville, département ou région. Vide : lieux de la configuration")] = "",
@@ -312,7 +323,7 @@ async def search_offers(
     return await _run(work)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Lire une offre", read_only=True, destructive=False, idempotent=True, open_world=True))
 async def get_offer(
     offer_id: Annotated[str, Field(description="Identifiant numérique de l'offre, ex. 84561625")],
 ) -> dict[str, Any]:
@@ -326,7 +337,7 @@ async def get_offer(
     return _offer_payload(offer, config)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Analyser et noter des offres", read_only=False, destructive=False, idempotent=False, open_world=True))
 async def analyze_offers(
     offer_ids: Annotated[list[str], Field(min_length=1, max_length=20, description="1 à 20 identifiants d'offre")],
     include_description: Annotated[bool, Field(description="Inclure la description complète de chaque offre")] = False,
@@ -371,7 +382,7 @@ async def analyze_offers(
     return await _run(work)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Classer une offre", read_only=False, destructive=False, idempotent=False, open_world=False))
 def mark_offer(
     offer_id: Annotated[str, Field(description="Identifiant de l'offre")],
     status: Annotated[Literal["selected", "rejected", "manual_action_required"], Field(description="Nouveau statut")],
@@ -391,7 +402,7 @@ def mark_offer(
 # ---------------------------------------------------------------- candidatures
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Préparer une candidature", read_only=False, destructive=False, idempotent=False, open_world=True))
 async def prepare_application(
     offer_id: Annotated[str, Field(description="Identifiant de l'offre")],
     message: Annotated[
@@ -443,7 +454,7 @@ async def prepare_application(
     return result
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Envoyer une candidature", read_only=False, destructive=True, idempotent=False, open_world=True))
 async def submit_application(
     offer_id: Annotated[str, Field(description="Identifiant de l'offre")],
     confirmation_token: Annotated[str, Field(description="Jeton reçu de prepare_application")],
@@ -504,7 +515,7 @@ async def submit_application(
 # ---------------------------------------------------------------- redirections externes
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Enregistrer un lien de candidature externe", read_only=False, destructive=False, idempotent=True, open_world=True))
 async def record_external_redirect(
     offer_id: Annotated[str, Field(description="Identifiant de l'offre Hellowork")],
     external_url: Annotated[str | None, Field(description="URL externe. Vide : détectée depuis la page de l'offre")] = None,
@@ -545,7 +556,7 @@ async def record_external_redirect(
     }
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Ouvrir un lien externe", read_only=False, destructive=False, idempotent=False, open_world=True))
 def open_external_redirect(
     external_url: Annotated[str, Field(description="URL externe déjà enregistrée par record_external_redirect")],
     force: Annotated[bool, Field(description="Rouvrir même si le lien a déjà été ouvert")] = False,
@@ -571,7 +582,7 @@ def open_external_redirect(
     }
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Lister les liens externes", read_only=True, destructive=False, idempotent=True, open_world=False))
 def list_redirects(
     category: Annotated[
         Literal["job_board", "company_careers", "ats", "other"] | None, Field(description="Filtrer par catégorie")
@@ -587,7 +598,7 @@ def list_redirects(
     return {"count": len(entries), "categories": CATEGORY_LABELS, "redirects": entries}
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Classer une URL externe", read_only=True, destructive=False, idempotent=True, open_world=False))
 def classify_external_url(url: Annotated[str, Field(description="URL à classer")]) -> dict[str, Any]:
     """Classe une URL : job_board (site d'annonce), company_careers (site carrière), ats ou other."""
     if not is_safe_external_url(url):
@@ -599,7 +610,7 @@ def classify_external_url(url: Annotated[str, Field(description="URL à classer"
 # ---------------------------------------------------------------- historique et exports
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Consulter l'historique", read_only=True, destructive=False, idempotent=True, open_world=False))
 def get_history(
     limit: Annotated[int, Field(ge=1, le=1000, description="Nombre d'événements")] = 50,
     event: Annotated[str | None, Field(description="Filtrer par type : " + ", ".join(EVENT_LABELS))] = None,
@@ -612,7 +623,7 @@ def get_history(
     return {"count": len(events), "events": events}
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Lister les offres suivies", read_only=True, destructive=False, idempotent=True, open_world=False))
 def list_tracked_offers(
     status: Annotated[str | None, Field(description="Filtrer par statut : " + ", ".join(EVENT_LABELS))] = None,
     limit: Annotated[int, Field(ge=1, le=1000)] = 100,
@@ -622,7 +633,7 @@ def list_tracked_offers(
     return {"count": len(offers), "offers": offers[:limit]}
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ann("Exporter en CSV ou Markdown", read_only=False, destructive=False, idempotent=False, open_world=False))
 def export_data(
     dataset: Annotated[Literal["offers", "events", "redirects"], Field(description="Données à exporter")] = "offers",
     format: Annotated[Literal["csv", "markdown"], Field(description="csv (Excel, séparateur ;) ou markdown")] = "csv",
